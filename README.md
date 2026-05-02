@@ -56,7 +56,7 @@ Blockchain (Hardhat / Testnet)
 
 ## 🧪 Entorno de desarrollo
 
-Este proyecto fue desarrollado utilizando una blockchain local con Hardhat.
+Este proyecto fue desarrollado utilizando una blockchain en sepolia.
 
 ### Ejecutar localmente:
 
@@ -65,7 +65,7 @@ Este proyecto fue desarrollado utilizando una blockchain local con Hardhat.
 npx hardhat node
 
 # deploy contrato
-npx hardhat run scripts/deploy.js --network localhost
+npx hardhat run scripts/deploy.js --network sepolia
 
 # frontend
 cd frontend
@@ -97,8 +97,3 @@ npm start
 
 Desarrollado por Mariano
 
----
-
-## 📄 Licencia
-
-MIT
