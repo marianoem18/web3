@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+frontend/build/
+frontend/dist/
+
+# Environment variables (¡MUY IMPORTANTE!)
+.env
+.env.local
+.env.*.local
+
+# Hardhat / Ethereum
+cache/
+artifacts/
+typechain/
+ignition/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Misc
+.DS_Store
+.vscode/.env
+*.env
