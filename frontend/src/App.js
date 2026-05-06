@@ -1,6 +1,43 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 
+// 🔌 Web3Modal
+import {
+  createWeb3Modal,
+  defaultConfig,
+  useWeb3ModalAccount,
+  useWeb3ModalProvider
+} from "@web3modal/ethers/react";
+
+// 🔑 Tu Project ID (OK dejarlo público)
+const projectId = "0f07a3bac26fd86a205a041187991721";
+
+// 🌐 Sepolia
+const sepolia = {
+  chainId: 11155111,
+  name: "Sepolia",
+  currency: "ETH",
+  explorerUrl: "https://sepolia.etherscan.io",
+  rpcUrl: "https://rpc.sepolia.org"
+};
+
+// ⚙️ Config
+const metadata = {
+  name: "Web3 Access",
+  description: "Access control DApp",
+  url: "http://localhost:3000",
+  icons: []
+};
+
+const ethersConfig = defaultConfig({ metadata });
+
+createWeb3Modal({
+  ethersConfig,
+  chains: [sepolia],
+  projectId
+});
+
+// 📜 Tu contrato (NO tocado)
 const contractAddress = "0x99844e61B1BDBfBE21bE86A553c94DdEd0177f14";
 
 const abi = [
@@ -11,33 +48,40 @@ const abi = [
 ];
 
 function App() {
-  const [account, setAccount] = useState("");
+  const { address, isConnected } = useWeb3ModalAccount();
+  const { walletProvider } = useWeb3ModalProvider();
+
   const [status, setStatus] = useState("");
   const [isOwner, setIsOwner] = useState(false);
   const [targetAddress, setTargetAddress] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function connectWallet() {
-    try {
-      if (!window.ethereum) return alert("Instalá MetaMask");
+  // 👑 Detectar owner
+  useEffect(() => {
+    if (isConnected) checkOwner();
+  }, [isConnected, address]);
 
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const accounts = await provider.send("eth_requestAccounts", []);
-
-      setAccount(accounts[0]);
-      await checkOwner(accounts[0]);
-
-    } catch (err) {
-      setStatus("Error al conectar");
-    }
+  async function getSigner() {
+    const provider = new ethers.BrowserProvider(walletProvider);
+    return await provider.getSigner();
   }
 
-  async function checkOwner(acc) {
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    const contract = new ethers.Contract(contractAddress, abi, provider);
+  async function getContract(signer = null) {
+    if (signer) {
+      return new ethers.Contract(contractAddress, abi, signer);
+    }
+    const provider = new ethers.BrowserProvider(walletProvider);
+    return new ethers.Contract(contractAddress, abi, provider);
+  }
 
-    const owner = await contract.owner();
-    setIsOwner(owner.toLowerCase() === acc.toLowerCase());
+  async function checkOwner() {
+    try {
+      const contract = await getContract();
+      const owner = await contract.owner();
+      setIsOwner(owner.toLowerCase() === address.toLowerCase());
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   async function authorizeUser() {
@@ -49,9 +93,8 @@ function App() {
       setLoading(true);
       setStatus("Confirmá en wallet...");
 
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      const contract = new ethers.Contract(contractAddress, abi, signer);
+      const signer = await getSigner();
+      const contract = await getContract(signer);
 
       const tx = await contract.authorize(targetAddress);
 
@@ -59,8 +102,8 @@ function App() {
       await tx.wait();
 
       setStatus("✅ Usuario autorizado");
-
-    } catch {
+    } catch (err) {
+      console.error(err);
       setStatus("❌ Error");
     } finally {
       setLoading(false);
@@ -76,9 +119,8 @@ function App() {
       setLoading(true);
       setStatus("Confirmá en wallet...");
 
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      const contract = new ethers.Contract(contractAddress, abi, signer);
+      const signer = await getSigner();
+      const contract = await getContract(signer);
 
       const tx = await contract.revoke(targetAddress);
 
@@ -86,7 +128,6 @@ function App() {
       await tx.wait();
 
       setStatus("❌ Usuario revocado");
-
     } catch {
       setStatus("Error");
     } finally {
@@ -98,13 +139,10 @@ function App() {
     try {
       setLoading(true);
 
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const contract = new ethers.Contract(contractAddress, abi, provider);
-
-      const result = await contract.isAuthorized(account);
+      const contract = await getContract();
+      const result = await contract.isAuthorized(address);
 
       setStatus(result ? "🟢 Autorizado" : "🔴 No autorizado");
-
     } catch {
       setStatus("Error");
     } finally {
@@ -114,23 +152,17 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-black text-white flex items-center justify-center">
-      
       <div className="w-full max-w-md bg-slate-800 p-6 rounded-2xl shadow-2xl border border-slate-700">
 
         <h1 className="text-2xl font-bold mb-4 text-center">
           🔐 Web3 Access
         </h1>
 
-        <button
-          onClick={connectWallet}
-          className="w-full bg-blue-600 hover:bg-blue-700 transition p-2 rounded-lg mb-4 disabled:opacity-50"
-          disabled={loading}
-        >
-          {account ? "Wallet conectada" : "Conectar Wallet"}
-        </button>
+        {/* 🔥 NUEVO BOTÓN */}
+        <w3m-button />
 
-        <p className="text-xs text-gray-400 mb-4 break-all text-center">
-          {account || "No conectado"}
+        <p className="text-xs text-gray-400 mt-2 mb-4 break-all text-center">
+          {address || "No conectado"}
         </p>
 
         {isOwner && (

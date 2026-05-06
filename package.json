@@ -15,6 +15,7 @@
     "hardhat": "^2.22.0"
   },
   "dependencies": {
+    "@web3modal/ethers": "^5.1.11",
     "dotenv": "^17.4.2",
     "ethers": "^6.16.0"
   }
