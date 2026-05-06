@@ -1,18 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ethers } from "ethers";
+import { createWeb3Modal, defaultConfig } from "@web3modal/ethers/react";
 
-// 🔌 Web3Modal
-import {
-  createWeb3Modal,
-  defaultConfig,
-  useWeb3ModalAccount,
-  useWeb3ModalProvider
-} from "@web3modal/ethers/react";
-
-// 🔑 Tu Project ID (OK dejarlo público)
+// ⚠️ TU PROJECT ID (esto está bien que sea público)
 const projectId = "0f07a3bac26fd86a205a041187991721";
 
-// 🌐 Sepolia
+// ⚠️ CONFIGURACIÓN DE RED (Sepolia)
 const sepolia = {
   chainId: 11155111,
   name: "Sepolia",
@@ -21,23 +14,26 @@ const sepolia = {
   rpcUrl: "https://rpc.sepolia.org"
 };
 
-// ⚙️ Config
+// ⚠️ CONFIG WALLETCONNECT
 const metadata = {
   name: "Web3 Access",
-  description: "Access control DApp",
-  url: "http://localhost:3000",
+  description: "DApp de control de acceso",
+  url: "https://web3.vercel.app",
   icons: []
 };
 
-const ethersConfig = defaultConfig({ metadata });
+const ethersConfig = defaultConfig({
+  metadata
+});
 
 createWeb3Modal({
   ethersConfig,
   chains: [sepolia],
-  projectId
+  projectId,
+  enableAnalytics: false
 });
 
-// 📜 Tu contrato (NO tocado)
+// ⚠️ TU CONTRATO
 const contractAddress = "0x99844e61B1BDBfBE21bE86A553c94DdEd0177f14";
 
 const abi = [
@@ -48,46 +44,72 @@ const abi = [
 ];
 
 function App() {
-  const { address, isConnected } = useWeb3ModalAccount();
-  const { walletProvider } = useWeb3ModalProvider();
-
+  const [account, setAccount] = useState("");
+  const [provider, setProvider] = useState(null);
   const [status, setStatus] = useState("");
   const [isOwner, setIsOwner] = useState(false);
   const [targetAddress, setTargetAddress] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // 👑 Detectar owner
-useEffect(() => {
-  if (isConnected) {
-    checkOwner();
-  }
-}, [isConnected, address, checkOwner]);
-  
+  // 🔌 Conectar wallet (WalletConnect + Metamask)
+  const connectWallet = async () => {
+    try {
+      const modal = document.querySelector("w3m-button");
+      if (!modal) return;
 
-  async function getSigner() {
-    const provider = new ethers.BrowserProvider(walletProvider);
-    return await provider.getSigner();
-  }
+      // Web3Modal maneja conexión automáticamente
+      const ethProvider = window.ethereum;
+      if (!ethProvider) {
+        return setStatus("Instalá una wallet compatible");
+      }
 
-  async function getContract(signer = null) {
-    if (signer) {
-      return new ethers.Contract(contractAddress, abi, signer);
+      const ethersProvider = new ethers.BrowserProvider(ethProvider);
+      const signer = await ethersProvider.getSigner();
+      const address = await signer.getAddress();
+
+      setAccount(address);
+      setProvider(ethersProvider);
+
+    } catch (err) {
+      setStatus("Error al conectar");
     }
-    const provider = new ethers.BrowserProvider(walletProvider);
-    return new ethers.Contract(contractAddress, abi, provider);
-  }
+  };
 
-  async function checkOwner() {
+  // 📦 Obtener contrato
+  const getContract = async (withSigner = false) => {
+    const ethProvider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await ethProvider.getSigner();
+
+    return new ethers.Contract(
+      contractAddress,
+      abi,
+      withSigner ? signer : ethProvider
+    );
+  };
+
+  // 👑 Verificar owner (SOLUCIONADO ERROR ESLINT)
+  const checkOwner = useCallback(async () => {
     try {
       const contract = await getContract();
       const owner = await contract.owner();
-      setIsOwner(owner.toLowerCase() === address.toLowerCase());
+
+      if (account) {
+        setIsOwner(owner.toLowerCase() === account.toLowerCase());
+      }
     } catch (err) {
       console.error(err);
     }
-  }
+  }, [account]);
 
-  async function authorizeUser() {
+  // ⚡ Ejecutar al conectar
+  useEffect(() => {
+    if (account) {
+      checkOwner();
+    }
+  }, [account, checkOwner]);
+
+  // ✅ Autorizar
+  const authorizeUser = async () => {
     try {
       if (!ethers.isAddress(targetAddress)) {
         return setStatus("Dirección inválida");
@@ -96,24 +118,21 @@ useEffect(() => {
       setLoading(true);
       setStatus("Confirmá en wallet...");
 
-      const signer = await getSigner();
-      const contract = await getContract(signer);
-
+      const contract = await getContract(true);
       const tx = await contract.authorize(targetAddress);
 
-      setStatus("Procesando...");
       await tx.wait();
-
       setStatus("✅ Usuario autorizado");
-    } catch (err) {
-      console.error(err);
+
+    } catch {
       setStatus("❌ Error");
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  async function revokeUser() {
+  // ❌ Revocar
+  const revokeUser = async () => {
     try {
       if (!ethers.isAddress(targetAddress)) {
         return setStatus("Dirección inválida");
@@ -122,36 +141,35 @@ useEffect(() => {
       setLoading(true);
       setStatus("Confirmá en wallet...");
 
-      const signer = await getSigner();
-      const contract = await getContract(signer);
-
+      const contract = await getContract(true);
       const tx = await contract.revoke(targetAddress);
 
-      setStatus("Procesando...");
       await tx.wait();
-
       setStatus("❌ Usuario revocado");
+
     } catch {
       setStatus("Error");
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  async function checkStatus() {
+  // 🔍 Ver estado
+  const checkStatus = async () => {
     try {
       setLoading(true);
 
       const contract = await getContract();
-      const result = await contract.isAuthorized(address);
+      const result = await contract.isAuthorized(account);
 
       setStatus(result ? "🟢 Autorizado" : "🔴 No autorizado");
+
     } catch {
       setStatus("Error");
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-black text-white flex items-center justify-center">
@@ -161,41 +179,46 @@ useEffect(() => {
           🔐 Web3 Access
         </h1>
 
-        {/* 🔥 NUEVO BOTÓN */}
+        {/* BOTÓN WALLETCONNECT */}
         <w3m-button />
 
-        <p className="text-xs text-gray-400 mt-2 mb-4 break-all text-center">
-          {address || "No conectado"}
+        <button
+          onClick={connectWallet}
+          className="w-full bg-blue-600 hover:bg-blue-700 p-2 rounded-lg mt-4"
+        >
+          Conectar manual
+        </button>
+
+        <p className="text-xs text-gray-400 mt-2 break-all text-center">
+          {account || "No conectado"}
         </p>
 
         {isOwner && (
-          <div className="bg-slate-700 p-4 rounded-xl mb-4 border border-slate-600">
-            <h2 className="font-semibold mb-2 text-sm text-gray-300">
-              Panel Admin
-            </h2>
+          <div className="bg-slate-700 p-4 rounded-xl mt-4 border border-slate-600">
+            <h2 className="text-sm mb-2 text-gray-300">Panel Admin</h2>
 
             <input
               value={targetAddress}
               onChange={(e) => setTargetAddress(e.target.value)}
               placeholder="0x..."
-              className="w-full p-2 rounded bg-slate-900 mb-3 outline-none border border-slate-600"
+              className="w-full p-2 rounded bg-slate-900 mb-3 border border-slate-600"
             />
 
             <div className="flex gap-2">
               <button
                 onClick={authorizeUser}
                 disabled={loading}
-                className="flex-1 bg-green-600 hover:bg-green-700 p-2 rounded disabled:opacity-50"
+                className="flex-1 bg-green-600 p-2 rounded"
               >
-                {loading ? "..." : "Autorizar"}
+                Autorizar
               </button>
 
               <button
                 onClick={revokeUser}
                 disabled={loading}
-                className="flex-1 bg-red-600 hover:bg-red-700 p-2 rounded disabled:opacity-50"
+                className="flex-1 bg-red-600 p-2 rounded"
               >
-                {loading ? "..." : "Revocar"}
+                Revocar
               </button>
             </div>
           </div>
@@ -204,9 +227,9 @@ useEffect(() => {
         <button
           onClick={checkStatus}
           disabled={loading}
-          className="w-full bg-purple-600 hover:bg-purple-700 p-2 rounded-lg disabled:opacity-50"
+          className="w-full bg-purple-600 p-2 rounded-lg mt-4"
         >
-          {loading ? "Consultando..." : "Ver mi estado"}
+          Ver estado
         </button>
 
         <p className="mt-4 text-center text-sm text-gray-300">
