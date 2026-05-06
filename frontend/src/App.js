@@ -2,10 +2,10 @@ import { useState, useEffect, useCallback } from "react";
 import { ethers } from "ethers";
 import { createWeb3Modal, defaultConfig } from "@web3modal/ethers/react";
 
-// ⚠️ TU PROJECT ID (esto está bien que sea público)
+// 🔑 Project ID (puede ser público)
 const projectId = "0f07a3bac26fd86a205a041187991721";
 
-// ⚠️ CONFIGURACIÓN DE RED (Sepolia)
+// 🌐 Red Sepolia
 const sepolia = {
   chainId: 11155111,
   name: "Sepolia",
@@ -14,7 +14,7 @@ const sepolia = {
   rpcUrl: "https://rpc.sepolia.org"
 };
 
-// ⚠️ CONFIG WALLETCONNECT
+// ⚙️ Configuración WalletConnect
 const metadata = {
   name: "Web3 Access",
   description: "DApp de control de acceso",
@@ -33,7 +33,7 @@ createWeb3Modal({
   enableAnalytics: false
 });
 
-// ⚠️ TU CONTRATO
+// 📜 Contrato
 const contractAddress = "0x99844e61B1BDBfBE21bE86A553c94DdEd0177f14";
 
 const abi = [
@@ -45,19 +45,14 @@ const abi = [
 
 function App() {
   const [account, setAccount] = useState("");
-  const [provider, setProvider] = useState(null);
   const [status, setStatus] = useState("");
   const [isOwner, setIsOwner] = useState(false);
   const [targetAddress, setTargetAddress] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // 🔌 Conectar wallet (WalletConnect + Metamask)
+  // 🔌 Conectar wallet (fallback manual)
   const connectWallet = async () => {
     try {
-      const modal = document.querySelector("w3m-button");
-      if (!modal) return;
-
-      // Web3Modal maneja conexión automáticamente
       const ethProvider = window.ethereum;
       if (!ethProvider) {
         return setStatus("Instalá una wallet compatible");
@@ -68,8 +63,6 @@ function App() {
       const address = await signer.getAddress();
 
       setAccount(address);
-      setProvider(ethersProvider);
-
     } catch (err) {
       setStatus("Error al conectar");
     }
@@ -78,24 +71,24 @@ function App() {
   // 📦 Obtener contrato
   const getContract = async (withSigner = false) => {
     const ethProvider = new ethers.BrowserProvider(window.ethereum);
-    const signer = await ethProvider.getSigner();
 
-    return new ethers.Contract(
-      contractAddress,
-      abi,
-      withSigner ? signer : ethProvider
-    );
+    if (withSigner) {
+      const signer = await ethProvider.getSigner();
+      return new ethers.Contract(contractAddress, abi, signer);
+    }
+
+    return new ethers.Contract(contractAddress, abi, ethProvider);
   };
 
-  // 👑 Verificar owner (SOLUCIONADO ERROR ESLINT)
+  // 👑 Verificar owner (fix ESLint)
   const checkOwner = useCallback(async () => {
     try {
+      if (!account) return;
+
       const contract = await getContract();
       const owner = await contract.owner();
 
-      if (account) {
-        setIsOwner(owner.toLowerCase() === account.toLowerCase());
-      }
+      setIsOwner(owner.toLowerCase() === account.toLowerCase());
     } catch (err) {
       console.error(err);
     }
@@ -123,7 +116,6 @@ function App() {
 
       await tx.wait();
       setStatus("✅ Usuario autorizado");
-
     } catch {
       setStatus("❌ Error");
     } finally {
@@ -146,7 +138,6 @@ function App() {
 
       await tx.wait();
       setStatus("❌ Usuario revocado");
-
     } catch {
       setStatus("Error");
     } finally {
@@ -157,13 +148,14 @@ function App() {
   // 🔍 Ver estado
   const checkStatus = async () => {
     try {
+      if (!account) return setStatus("Conectá tu wallet primero");
+
       setLoading(true);
 
       const contract = await getContract();
       const result = await contract.isAuthorized(account);
 
       setStatus(result ? "🟢 Autorizado" : "🔴 No autorizado");
-
     } catch {
       setStatus("Error");
     } finally {
@@ -179,7 +171,7 @@ function App() {
           🔐 Web3 Access
         </h1>
 
-        {/* BOTÓN WALLETCONNECT */}
+        {/* WalletConnect UI */}
         <w3m-button />
 
         <button
