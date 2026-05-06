@@ -57,9 +57,12 @@ function App() {
   const [loading, setLoading] = useState(false);
 
   // 👑 Detectar owner
-  useEffect(() => {
-    if (isConnected) checkOwner();
-  }, [isConnected, address]);
+useEffect(() => {
+  if (isConnected) {
+    checkOwner();
+  }
+}, [isConnected, address, checkOwner]);
+  
 
   async function getSigner() {
     const provider = new ethers.BrowserProvider(walletProvider);
