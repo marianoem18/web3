@@ -1,99 +1,154 @@
 # 🔐 Web3 Access Control DApp
 
-Aplicación descentralizada (DApp) que implementa un sistema de control de acceso basado en blockchain utilizando smart contracts y autenticación mediante wallet.
+Aplicación descentralizada (DApp) que permite gestionar permisos de acceso en la blockchain mediante un smart contract.
+Incluye un panel administrativo y conexión de wallets compatible con desktop y mobile.
 
 ---
 
 ## 🚀 Demo
 
-web3-mu-amber.vercel.app
+👉 Deploy: _(poné acá tu link de Vercel)_
 
 ---
 
 ## 🧠 Descripción
 
-Este proyecto permite gestionar accesos de usuarios mediante direcciones de wallet en una red blockchain.
+Este proyecto implementa un sistema de control de acceso on-chain donde:
 
-Un administrador (owner del contrato) puede autorizar o revocar permisos, mientras que los usuarios pueden verificar su estado de acceso en tiempo real.
+- Un **owner (administrador)** puede autorizar o revocar direcciones
+- Los usuarios pueden consultar su estado en la blockchain
+- Toda la lógica crítica se ejecuta en un **smart contract**
 
----
+La app está diseñada como una DApp completa, incluyendo:
 
-## ⚙️ Tecnologías utilizadas
-
-* **Solidity** → desarrollo del smart contract
-* **Hardhat** → entorno de desarrollo y testing
-* **React** → frontend de la aplicación
-* **Ethers.js** → interacción con blockchain
-* **Tailwind CSS** → diseño y UI
-* **MetaMask** → autenticación de usuarios
+- Contrato inteligente
+- Frontend Web3
+- Integración con wallets reales
 
 ---
 
-## 🔐 Funcionalidades
+## 🛠️ Tecnologías utilizadas
 
-* Conexión de wallet mediante MetaMask
-* Autorización de usuarios (solo admin)
-* Revocación de permisos
-* Verificación de estado de acceso
-* Control de roles (owner vs usuario)
-* Interfaz moderna y responsive
+### Frontend
+
+- React
+- TailwindCSS
+- Ethers.js
+- Web3Modal (WalletConnect)
+
+### Blockchain
+
+- Solidity
+- Hardhat
+- Red: Sepolia (testnet)
+
+### Deploy
+
+- Vercel
 
 ---
 
-## 🧩 Arquitectura
+## 🔗 Funcionalidades
 
+### 👑 Panel de administrador
+
+- Autorizar direcciones
+- Revocar acceso
+- Validación de permisos (solo owner)
+
+### 👤 Usuario
+
+- Conectar wallet (MetaMask / WalletConnect)
+- Consultar estado de autorización
+
+---
+
+## 🔐 Smart Contract
+
+Funciones principales:
+
+```solidity
+function authorize(address user)
+function revoke(address user)
+function isAuthorized(address user) view returns (bool)
+function owner() view returns (address)
 ```
-Usuario (MetaMask)
-        ↓
-Frontend (React + Ethers)
-        ↓
-Smart Contract (Solidity)
-        ↓
-Blockchain (Hardhat / Testnet)
-```
+
+📍 Contrato deployado en Sepolia:
+`0x99844e61B1BDBfBE21bE86A553c94DdEd0177f14`
 
 ---
 
-## 🧪 Entorno de desarrollo
-
-Este proyecto fue desarrollado utilizando una blockchain en sepolia.
-
-### Ejecutar localmente:
+## 📦 Instalación local
 
 ```bash
-# backend
-npx hardhat node
-
-# deploy contrato
-npx hardhat run scripts/deploy.js --network sepolia
-
-# frontend
-cd frontend
+git clone https://github.com/marianoem18/web3.git
+cd web3/frontend
+npm install
 npm start
 ```
 
 ---
 
-## 🌐 Posibles casos de uso
+## ⚙️ Configuración
 
-* Control de acceso en aplicaciones SaaS
-* Sistemas de membresía (ej: gimnasios)
-* Comunidades privadas
-* Whitelists en proyectos Web3
+El proyecto utiliza WalletConnect mediante Web3Modal.
+
+Para usar tu propio Project ID:
+
+1. Crear cuenta en WalletConnect Cloud
+2. Reemplazar:
+
+```js
+const projectId = "TU_PROJECT_ID";
+```
 
 ---
 
-## 📌 Mejoras futuras
+## 📱 Compatibilidad
 
-* Deploy en testnet (Sepolia)
-* Persistencia de datos off-chain
-* Sistema de autenticación sin transacción (firma)
-* UI/UX avanzada
-* Dashboard administrativo
+- ✅ Desktop (MetaMask)
+- ✅ Mobile (WalletConnect)
+- ❌ No depende de Hardhat local (deploy real en testnet)
+
+---
+
+## 🧪 Testing
+
+El contrato fue probado en entorno local con Hardhat y luego deployado en testnet para validación real.
+
+---
+
+## 🎯 Objetivo del proyecto
+
+Este proyecto fue desarrollado como parte de mi formación como programador, con el objetivo de:
+
+- Comprender el flujo completo de una DApp
+- Integrar smart contracts con frontend
+- Manejar conexión de wallets en distintos entornos
+- Resolver problemas reales de deploy Web3
+
+---
+
+## 🧠 Aprendizajes clave
+
+- Integración de Ethers v6 con frontend
+- Uso de WalletConnect para mobile
+- Deploy de contratos en testnet
+- Manejo de estados asincrónicos en Web3
+- Resolución de errores en producción (Vercel + ESLint)
+
+---
+
+## 📄 Licencia
+
+MIT
 
 ---
 
 ## 👨‍💻 Autor
 
-Desarrollado por Mariano
+**Mariano González**
+Técnico Universitario en Programación
 
+GitHub: https://github.com/marianoem18
