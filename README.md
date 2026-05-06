@@ -7,7 +7,7 @@ Incluye un panel administrativo y conexión de wallets compatible con desktop y 
 
 ## 🚀 Demo
 
-👉 Deploy: _(poné acá tu link de Vercel)_
+👉 Deploy: web3-mu-amber.vercel.app
 
 ---
 
